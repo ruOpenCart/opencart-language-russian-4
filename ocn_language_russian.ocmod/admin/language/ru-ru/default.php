@@ -44,7 +44,7 @@ $_['text_months_ago']               = '%s месяцев назад';
 $_['text_year_ago']                 = '%s год назад';
 $_['text_years_ago']                = '%s лет назад';
 
-// Button
+// Buttons
 $_['button_add']                    = 'Добавить новое';
 $_['button_delete']                 = 'Удалить';
 $_['button_save']                   = 'Сохранить';
@@ -81,7 +81,6 @@ $_['button_option_add']             = 'Добавить опцию';
 $_['button_option_value_add']       = 'Добавить значение опции';
 $_['button_subscription_add']       = 'Добавить подписку';
 $_['button_discount_add']           = 'Добавить скидку';
-$_['button_special_add']            = 'Добавить специальное предложение';
 $_['button_image_add']              = 'Добавить изображение';
 $_['button_geo_zone_add']           = 'Добавить геозону';
 $_['button_history_add']            = 'Добавить историю';
@@ -95,7 +94,6 @@ $_['button_approve']                = 'Одобрить';
 $_['button_deny']                   = 'Отклонить';
 $_['button_reset']                  = 'Сбросить';
 $_['button_generate']               = 'Генерировать';
-$_['button_voucher_add']            = 'Добавить подарочный сертификат';
 $_['button_view']                   = 'Посмотреть';
 $_['button_reward_add']             = 'Добавить бонусные баллы';
 $_['button_reward_remove']          = 'Удалить бонусные баллы';
@@ -126,7 +124,7 @@ $_['button_calculate']              = 'Рассчитать платежи';
 $_['button_csv']                    = 'Скачать CSV';
 $_['button_complete']               = 'Завершить платежи';
 
-// Tab
+// Tabs
 $_['tab_address']                   = 'Адреса';
 $_['tab_additional']                = 'Дополнительно';
 $_['tab_attribute']                 = 'Атрибут';
@@ -146,15 +144,12 @@ $_['tab_option']                    = 'Опция';
 $_['tab_server']                    = 'Сервер';
 $_['tab_seo']                       = 'Поисковая оптимизация';
 $_['tab_store']                     = 'Магазин';
-$_['tab_special']                   = 'Специальное предложение';
-$_['tab_session']                   = 'Сессия';
 $_['tab_local']                     = 'Локализация';
 $_['tab_mail']                      = 'Почта';
 $_['tab_payment_method']            = 'Методы оплаты';
 $_['tab_product']                   = 'Товары';
 $_['tab_reward']                    = 'Бонусные баллы';
 $_['tab_transaction']               = 'Транзакции';
-$_['tab_voucher']                   = 'Сертификат';
 $_['tab_subscription']              = 'Подписка';
 $_['tab_report']                    = 'Отчет';
 
@@ -175,7 +170,7 @@ $_['error_format_kb']				= 'Внимание: Загруженный файл п
 $_['error_format_mb']				= 'Внимание: Загруженный файл превышает максимальный размер файла: %s мегабайт!';
 $_['error_format_gb']				= 'Внимание: Загруженный файл превышает максимальный размер файла: %s гигабайт!';
 
-/* When doing translations only include the matching language code */
+// When doing translations only include the matching language code
 
 // CKEditor
 //$_['ckeditor']                    = 'af';

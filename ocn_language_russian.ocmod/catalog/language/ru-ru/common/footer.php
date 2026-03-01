@@ -9,7 +9,6 @@ $_['text_return']       = 'Возвраты';
 $_['text_sitemap']      = 'Карта сайта';
 $_['text_gdpr']         = 'GDPR';
 $_['text_manufacturer'] = 'Бренды';
-$_['text_voucher']      = 'Подарочные сертификаты';
 $_['text_affiliate']    = 'Партнер';
 $_['text_special']      = 'Специальные предложения';
 $_['text_account']      = 'Моя учетная запись';

@@ -1,7 +1,9 @@
 <?php
 namespace Opencart\Admin\Controller\Extension\OcnLanguageRussian\Language;
-class Russian extends \Opencart\System\Engine\Controller {
-	public function index(): void {
+class Russian extends \Opencart\System\Engine\Controller
+{
+	public function index(): void
+	{
 		$this->load->language('extension/ocn_language_russian/language/russian');
 
 		$this->document->setTitle($this->language->get('heading_title'));
@@ -35,7 +37,8 @@ class Russian extends \Opencart\System\Engine\Controller {
 		$this->response->setOutput($this->load->view('extension/ocn_language_russian/language/russian', $data));
 	}
 
-	public function save(): void {
+	public function save(): void
+	{
 		$this->load->language('extension/ocn_language_russian/language/russian');
 
 		$json = [];
@@ -56,24 +59,28 @@ class Russian extends \Opencart\System\Engine\Controller {
 		$this->response->setOutput(json_encode($json));
 	}
 
-	public function install(): void {
+	public function install(): void
+	{
 		if ($this->user->hasPermission('modify', 'extension/language')) {
 			$language_info = $this->model_localisation_language->getLanguageByCode('ru-ru');
 
 			if (!$language_info) {
 				// Add language
 				$language_data = [
-					'name'       => 'Russian',
-					'code'       => 'ru-ru',
-					'locale'     => 'ru-ru',
-					'extension'  => 'ocn_language_russian',
-					'status'     => 1,
+					'name' => 'Russian',
+					'code' => 'ru-ru',
+					'locale' => 'ru-ru',
+					'extension' => 'ocn_language_russian',
+					'status' => 1,
 					'sort_order' => 1
 				];
 
 				$this->load->model('localisation/language');
+				$language_id = $this->model_localisation_language->addLanguage($language_data);
 
-				$this->model_localisation_language->addLanguage($language_data);
+				// Fix seo url
+				// $this->load->model('extension/ocn_language_russian/language/russian');
+				// $this->model_extension_ocn_language_russian_language_russian->fixSeoUrl($language_id);
 			} else {
 				// Edit language
 				$this->load->model('localisation/language');
@@ -83,7 +90,8 @@ class Russian extends \Opencart\System\Engine\Controller {
 		}
 	}
 
-	public function uninstall(): void {
+	public function uninstall(): void
+	{
 		if ($this->user->hasPermission('modify', 'extension/language')) {
 			$this->load->model('localisation/language');
 

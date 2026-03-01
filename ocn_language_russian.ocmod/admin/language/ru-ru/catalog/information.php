@@ -23,13 +23,9 @@ $_['entry_meta_keyword']      = 'Мета-тег Keywords';
 $_['entry_meta_description']  = 'Мета-тег Description';
 $_['entry_store']             = 'Магазины';
 $_['entry_keyword']           = 'Ключевое слово';
-$_['entry_bottom']            = 'Низ';
 $_['entry_status']            = 'Статус';
 $_['entry_sort_order']        = 'Порядок сортировки';
 $_['entry_layout']            = 'Переопределение макета';
-
-// Help
-$_['help_bottom']             = 'Показывать в нижней части сайта (футере).';
 
 // Error
 $_['error_warning']           = 'Внимание: Пожалуйста, проверьте форму на наличие ошибок!';

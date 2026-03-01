@@ -15,8 +15,6 @@ $_['column_name']          = 'Название налога';
 $_['column_rate']          = 'Налоговая ставка';
 $_['column_type']          = 'Тип';
 $_['column_geo_zone']      = 'Гео-зона';
-$_['column_date_added']    = 'Дата добавления';
-$_['column_date_modified'] = 'Дата изменения';
 $_['column_action']        = 'Действие';
 
 // Entry

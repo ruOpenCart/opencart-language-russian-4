@@ -56,14 +56,13 @@ $_['button_write']          = 'Написать отзыв';
 $_['button_login']          = 'Войти';
 $_['button_update']         = 'Обновить';
 $_['button_remove']         = 'Убрать';
-$_['button_reorder']        = 'Повторить заказ';
-$_['button_return']         = 'Вернуть';
+$_['button_reorder']        = 'Купить снова';
+$_['button_return']         = 'Вернуть товар';
 $_['button_shopping']       = 'Продолжить покупки';
 $_['button_search']         = 'Искать';
 $_['button_submit']         = 'Отправить';
 $_['button_guest']          = 'Оформить заказ без регистрации';
 $_['button_view']           = 'Посмотреть';
-$_['button_voucher']        = 'Применить сертификат';
 $_['button_upload']         = 'Загрузить файл';
 $_['button_reward']         = 'Применить бонусы';
 $_['button_choose']         = 'Выберите';
@@ -87,7 +86,7 @@ $_['error_upload_size']     = 'Внимание: Загруженный файл
 $_['error_curl']            = 'CURL: Код ошибки(%s): %s';
 $_['error_session']         = 'Внимание: Сессия истекла, пожалуйста, отправьте форму снова!';
 
-/* When doing translations only include the matching language code */
+// When doing translations only include the matching language code
 // Datepicker
 //$_['datepicker']            = 'af';
 //$_['datepicker']            = 'ar-dz';

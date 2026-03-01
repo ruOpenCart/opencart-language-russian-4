@@ -1,0 +1,14 @@
+{
+    "name": "ocn/ocn_language_russian",
+    "version": "4.1.0.0.RE1",
+    "description": "Russian Language",
+    "type": "extension",
+    "license": "GPLv3",
+    "authors": [
+        {
+            "name": "Aleksandr Gorbatov",
+            "email": "hkrtrk@yandex.ru"
+        }
+    ],
+    "require": {}
+}

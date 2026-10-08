@@ -12,8 +12,5 @@ $_['column_code']       = 'Код запуска';
 $_['column_sort_order'] = 'Порядок сортировки';
 $_['column_action']     = 'Действие';
 
-// Entry
-$_['entry_description'] = 'Описание';
-
 // Error
 $_['error_permission']  = 'Внимание: У вас нет прав для изменения автозагрузки!';

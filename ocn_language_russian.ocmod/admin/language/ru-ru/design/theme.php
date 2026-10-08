@@ -6,7 +6,6 @@ $_['heading_title']     = 'Редактор темы';
 $_['text_success']      = 'Успех: Вы изменили темы!';
 $_['text_add']          = 'Добавление темы';
 $_['text_edit']         = 'Редактирование темы';
-$_['text_default']      = 'По умолчанию';
 $_['text_extension']    = 'Расширения';
 $_['text_code']         = 'Редактор кода шаблона';
 $_['text_twig']         = 'Редактор тем использует шаблонизатор Twig. Вы можете прочитать о <a href="https://twig.symfony.com/doc/" target="_blank" class="alert-link">синтаксисе Twig здесь</a>.';

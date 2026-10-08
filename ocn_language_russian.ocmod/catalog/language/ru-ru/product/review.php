@@ -14,7 +14,7 @@ $_['entry_rating']     = 'Рейтинг';
 $_['entry_good']       = 'Хорошо';
 $_['entry_bad']        = 'Плохо';
 
-// Tabs
+// Tab
 $_['tab_review']       = 'Отзывов (%s)';
 
 // Error

@@ -50,7 +50,6 @@ $_['text_accept_language']       = 'Используемый язык';
 $_['text_order_id']              = 'Номер заказа';
 $_['text_website']               = 'Веб-сайт';
 $_['text_invoice']               = 'Счет';
-$_['text_invoice_no']            = 'Счет №';
 $_['text_tbc']                   = 'TBC';
 $_['text_store_address']         = 'Адрес магазина';
 $_['text_store_telephone']       = 'Телефон магазина';
@@ -58,8 +57,13 @@ $_['text_store_email']           = 'Эл. почта магазина';
 $_['text_customer_email']        = 'Адрес эл. почты пользователя';
 $_['text_customer_telephone']    = 'Телефон покупателя';
 $_['text_missing']               = 'Пропавшие заказы';
-$_['text_default']               = 'По умолчанию';
 $_['text_picklist']              = 'Список доставки';
+$_['text_sku']                   = 'SKU';
+$_['text_upc']                   = 'UPC';
+$_['text_ean']                   = 'EAN';
+$_['text_jan']                   = 'JAN';
+$_['text_isbn']                  = 'ISBN';
+$_['text_mpn']                   = 'MPN';
 
 // Column
 $_['column_order_id']            = 'Номер заказа';
@@ -102,7 +106,6 @@ $_['entry_subscription']         = 'Выбор подписки';
 $_['entry_quantity']             = 'Количество';
 $_['entry_order_status']         = 'Статус заказа';
 $_['entry_notify']               = 'Уведомить покупателя';
-$_['entry_shipping_method']      = 'Способ доставки';
 $_['entry_payment_method']       = 'Метод оплаты';
 $_['entry_override']             = 'Переопределить';
 $_['entry_comment']              = 'Комментарий';
@@ -113,6 +116,8 @@ $_['entry_order_id']             = 'Номер заказа';
 $_['entry_total']                = 'Всего';
 $_['entry_date_from']            = 'Дата от';
 $_['entry_date_to']              = 'Дата до';
+$_['entry_date_modified_from']   = 'Дата изменения с';
+$_['entry_date_modified_to']     = 'Дата изменения до';
 
 // Help
 $_['help_override']              = 'Если в связи с расширением для борьбы с мошенничеством покупатель не сможет изменять статус заказа, то включите переопределение.';

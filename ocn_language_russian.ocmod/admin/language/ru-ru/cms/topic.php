@@ -8,6 +8,8 @@ $_['text_list']               = 'Список тем';
 $_['text_add']                = 'Добавить тему';
 $_['text_edit']               = 'Редактировать тему';
 $_['text_default']            = 'По умолчанию';
+$_['text_general']            = 'Общее';
+$_['text_meta']               = 'Метатеги';
 $_['text_keyword']            = 'Не используйте пробелы, вместо этого заменяйте пробелы на - и убедитесь, что Семантический URL-адрес является глобально уникальным.';
 
 // Column
@@ -19,13 +21,14 @@ $_['column_action']           = 'Действие';
 $_['entry_image']             = 'Изображение';
 $_['entry_name']              = 'Название темы';
 $_['entry_description']       = 'Описание';
-$_['entry_meta_title']        = 'Мета-тег Title';
+$_['entry_meta_title']        = 'Мета-тег title';
 $_['entry_meta_keyword']      = 'Мета-тег Keywords';
 $_['entry_meta_description']  = 'Мета-тег Description';
 $_['entry_store']             = 'Магазины';
 $_['entry_sort_order']        = 'Порядок сортировки';
 $_['entry_status']            = 'Статус';
 $_['entry_keyword']           = 'Ключевое слово';
+$_['entry_layout']            = 'Переопределение макета';
 
 // Error
 $_['error_warning']           = 'Внимание: Пожалуйста, проверьте форму на наличие ошибок!';

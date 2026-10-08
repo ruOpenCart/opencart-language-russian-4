@@ -8,6 +8,8 @@ $_['text_list']               = 'Список информации';
 $_['text_add']                = 'Добавление информации';
 $_['text_edit']               = 'Редактирование информации';
 $_['text_default']            = 'По умолчанию';
+$_['text_general']            = 'Общее';
+$_['text_meta']               = 'Метатеги';
 $_['text_keyword']            = 'Не используйте пробелы, вместо этого заменяйте пробелы на - и убедитесь, что Семантический URL-адрес является глобально уникальным.';
 
 // Column
@@ -18,7 +20,7 @@ $_['column_action']           = 'Действие';
 // Entry
 $_['entry_title']             = 'Заголовок информации';
 $_['entry_description']       = 'Описание';
-$_['entry_meta_title']        = 'Мета-тег Title';
+$_['entry_meta_title']        = 'Мета-тег title';
 $_['entry_meta_keyword']      = 'Мета-тег Keywords';
 $_['entry_meta_description']  = 'Мета-тег Description';
 $_['entry_store']             = 'Магазины';

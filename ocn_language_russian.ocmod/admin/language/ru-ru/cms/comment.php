@@ -23,7 +23,7 @@ $_['entry_status']     = 'Статус';
 $_['entry_date_from']  = 'Дата от';
 $_['entry_date_to']    = 'Дата до';
 
-// Button
+// Buttons
 $_['button_spam']      = 'Спам';
 $_['button_rating']    = 'Рассчитать рейтинги';
 

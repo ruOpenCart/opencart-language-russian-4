@@ -15,4 +15,4 @@ $_['text_account']      = 'Моя учетная запись';
 $_['text_order']        = 'История заказа';
 $_['text_wishlist']     = 'Список желаний';
 $_['text_newsletter']   = 'Рассылка';
-$_['text_powered']      = 'Работает на <a href="https://www.opencart.com" target="_blank">OpenCart</a><br/> %s &copy; %s<br/>Перевод <a href="https://forum.opencart.name" target="_blank">OpenCart.Name</a>';
+$_['text_powered']      = 'Работает на <a href="https://www.opencart.com" target="_blank">OpenCart</a><br/> %s &copy; %s<br/>Перевод &copy; <a href="https://forum.opencart.name" target="_blank">OpenCart.Name</a>';

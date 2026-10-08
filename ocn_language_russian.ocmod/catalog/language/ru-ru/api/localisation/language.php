@@ -3,4 +3,4 @@
 $_['text_success']   = 'Успех: Ваш язык был изменен!';
 
 // Error
-$_['error_language'] = 'Внимание: Язык не найден!';
+$_['error_language'] = 'Warning: Language could not be found!';

@@ -2,11 +2,11 @@
 // Text
 $_['text_search']                = 'Искать';
 $_['text_brand']                 = 'Бренд';
-$_['text_manufacturer']          = 'Бренд:';
-$_['text_model']                 = 'Код товара:';
-$_['text_reward']                = 'Бонусные баллы:';
+$_['text_manufacturer']          = 'Бренд';
+$_['text_model']                 = 'Модель';
+$_['text_reward']                = 'Бонусные баллы';
 $_['text_points']                = 'Цена в бонусных баллах:';
-$_['text_stock']                 = 'Доступность:';
+$_['text_stock']                 = 'Доступность';
 $_['text_tax']                   = 'Без налога:';
 $_['text_discount']              = ' или более ';
 $_['text_option']                = 'Доступные опции';

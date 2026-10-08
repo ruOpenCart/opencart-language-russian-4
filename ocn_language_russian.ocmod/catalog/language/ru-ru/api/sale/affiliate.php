@@ -5,4 +5,4 @@ $_['text_remove']     = 'Успех: Ваша партнерская комис�
 
 // Error
 $_['error_affiliate'] = 'Внимание: Партнер не найден!';
-$_['error_order']     = 'Внимание: Для применения комиссии промежуточный итог должен быть больше 0!';
+$_['error_order']     = 'Warning: Sub-Total needs to be above 0 for commission to be applied!';

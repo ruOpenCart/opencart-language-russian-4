@@ -26,9 +26,85 @@
               </div>
             </div>
           </div>
+          <fieldset>
+            <legend>{{ text_default }}</legend>
+            <div class="row mb-3">
+              <label for="input-preset" class="col-sm-2 col-form-label">{{ entry_preset }}</label>
+              <div class="col-sm-10">
+                <select name="language_russian_preset" id="input-preset" class="form-select">
+                  <option value="">{{ text_preset_none }}</option>
+                  {% for preset in presets %}
+                    <option value="{{ preset.code }}"{% if preset_selected == preset.code %} selected{% endif %}>{{ preset.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text">{{ help_preset }}</div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label for="input-default-country" class="col-sm-2 col-form-label">{{ entry_preset_country }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="language_russian_default_country" value="1" id="input-default-country" class="form-check-input"{% if preset_active.country %} checked{% endif %}/>
+                  <label for="input-default-country" class="form-check-label">{{ text_value_country }}</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label for="input-default-zone" class="col-sm-2 col-form-label">{{ entry_preset_zone }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="language_russian_default_zone" value="1" id="input-default-zone" class="form-check-input"{% if preset_active.zone %} checked{% endif %}/>
+                  <label for="input-default-zone" class="form-check-label">{{ text_value_zone }}</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label for="input-default-timezone" class="col-sm-2 col-form-label">{{ entry_preset_timezone }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="language_russian_default_timezone" value="1" id="input-default-timezone" class="form-check-input"{% if preset_active.timezone %} checked{% endif %}/>
+                  <label for="input-default-timezone" class="form-check-label">{{ text_value_timezone }}</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label for="input-default-language" class="col-sm-2 col-form-label">{{ entry_preset_language }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="language_russian_default_language" value="1" id="input-default-language" class="form-check-input"{% if preset_active.language %} checked{% endif %}/>
+                  <label for="input-default-language" class="form-check-label">{{ text_value_language }}</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label for="input-default-language-admin" class="col-sm-2 col-form-label">{{ entry_preset_language_admin }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="language_russian_default_language_admin" value="1" id="input-default-language-admin" class="form-check-input"{% if preset_active.language_admin %} checked{% endif %}/>
+                  <label for="input-default-language-admin" class="form-check-label">{{ text_value_language_admin }}</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label for="input-default-currency" class="col-sm-2 col-form-label">{{ entry_preset_currency }}</label>
+              <div class="col-sm-10">
+                <div class="form-check form-switch form-switch-lg">
+                  <input type="checkbox" name="language_russian_default_currency" value="1" id="input-default-currency" class="form-check-input"{% if preset_active.currency %} checked{% endif %}/>
+                  <label for="input-default-currency" class="form-check-label">{{ text_value_currency }}</label>
+                </div>
+              </div>
+            </div>
+          </fieldset>
         </form>
       </div>
     </div>
   </div>
 </div>
+<script type="text/javascript"><!--
+$('#input-preset').on('change', function() {
+    var enabled = $(this).val() !== '';
+
+    $('#input-default-country, #input-default-zone, #input-default-timezone, #input-default-language, #input-default-language-admin, #input-default-currency').prop('checked', enabled);
+});
+//--></script>
 {{ footer }}

@@ -78,6 +78,7 @@ $_['entry_translation_all'] = 'Enable translation of all tables';
 $_['button_translate'] = 'Translate';
 $_['button_check_update'] = 'Check for update';
 $_['text_update_available'] = 'Version %s is available';
+$_['text_update_tag'] = 'Updates are available, but there was no official release.';
 $_['text_update_current'] = 'You have the latest version';
 $_['error_update'] = 'Could not check for an update.';
 $_['error_update_link'] = 'The repository link cannot be used to check for updates.';

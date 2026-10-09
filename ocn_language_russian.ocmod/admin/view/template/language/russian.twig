@@ -3,6 +3,7 @@
   <div class="page-header">
     <div class="container-fluid">
       <div class="float-end">
+        <button type="button" id="button-check-update" data-bs-toggle="tooltip" title="{{ button_check_update }}" aria-label="{{ button_check_update }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i></button>
         <button type="submit" form="form-language" data-bs-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary"><i class="fas fa-save"></i></button>
         <a href="{{ back }}" data-bs-toggle="tooltip" title="{{ button_back }}" class="btn btn-light"><i class="fas fa-reply"></i></a></div>
       <h1>{{ heading_title }}</h1>
@@ -51,12 +52,6 @@
                   {% if extension_links.site %}
                     <a href="{{ extension_links.site }}" target="_blank" rel="noopener">{{ text_site }}</a>
                   {% endif %}
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-sm-10 offset-sm-2">
-                  <button type="button" id="button-check-update" class="btn btn-light"><i class="fas fa-sync"></i> {{ button_check_update }}</button>
-                  <span id="update-result" class="ms-2"></span>
                 </div>
               </div>
             </div>
@@ -349,7 +344,13 @@ $('#form-translation').on('submit', function(e) {
 });
 
 $('#button-check-update').on('click', function() {
-    var button = $(this);
+    checkLanguageUpdate();
+});
+
+checkLanguageUpdate();
+
+function checkLanguageUpdate() {
+    var button = $('#button-check-update');
 
     if (button.prop('disabled')) {
         return;
@@ -358,57 +359,82 @@ $('#button-check-update').on('click', function() {
     var icon = button.find('i');
 
     button.prop('disabled', true);
-    icon.removeClass('fa-sync').addClass('fa-circle-notch fa-spin');
-    $('#update-result').empty();
+    icon.removeClass('fa-sync-alt').addClass('fa-circle-notch fa-spin');
+    $('#alert-language-update').remove();
 
     $.ajax({
         url: '{{ check }}'.replaceAll('&amp;', '&'),
         dataType: 'json',
         complete: function() {
             button.prop('disabled', false);
-            icon.removeClass('fa-circle-notch fa-spin').addClass('fa-sync');
+            icon.removeClass('fa-circle-notch fa-spin').addClass('fa-sync-alt');
         },
         success: function(json) {
-            var result = $('#update-result');
-
             if (json['error']) {
-                result.text(json['error']);
+                showLanguageUpdateAlert('alert-danger', function(alert) {
+                    alert.append(document.createTextNode(json['error']));
+                });
                 return;
             }
 
             if (json['newer']) {
-                var message = json['message'] || '';
-                var version = json['version'] || '';
-                var start = version ? message.indexOf(version) : -1;
-                var link = $('<a>', {
-                    href: json['url'],
-                    target: '_blank',
-                    rel: 'noopener',
-                    text: version
+                showLanguageUpdateAlert(json['kind'] === 'release' ? 'alert-success' : 'alert-info', function(alert) {
+                    var message = json['message'] || '';
+                    var version = json['version'] || '';
+                    var start = version ? message.indexOf(version) : -1;
+                    var link = $('<a>', {
+                        href: json['url'],
+                        target: '_blank',
+                        rel: 'noopener',
+                        text: version
+                    });
+
+                    if (start >= 0 && json['url']) {
+                        alert.append(document.createTextNode(message.substring(0, start)));
+                        alert.append(link);
+                        alert.append(document.createTextNode(message.substring(start + version.length)));
+                    } else if (json['url']) {
+                        alert.append(document.createTextNode(message + ' '));
+                        alert.append(link);
+                    } else {
+                        alert.append(document.createTextNode(message));
+                    }
                 });
-
-                result.empty();
-
-                if (start >= 0 && json['url']) {
-                    result.append(document.createTextNode(message.substring(0, start)));
-                    result.append(link);
-                    result.append(document.createTextNode(message.substring(start + version.length)));
-                } else if (json['url']) {
-                    result.append(document.createTextNode(message + ' '));
-                    result.append(link);
-                } else {
-                    result.text(message);
-                }
-
                 return;
             }
 
-            result.text(json['message']);
+            showLanguageUpdateAlert('alert-secondary', function(alert) {
+                alert.append(document.createTextNode(json['message'] || ''));
+            });
         },
         error: function() {
-            $('#update-result').text({{ error_update|json_encode|raw }});
+            showLanguageUpdateAlert('alert-danger', function(alert) {
+                alert.append(document.createTextNode({{ error_update|json_encode|raw }}));
+            });
         }
     });
-});
+}
+
+function showLanguageUpdateAlert(type, fill) {
+    $('#alert-language-update').remove();
+
+    var icon = 'fa-circle-exclamation';
+
+    if (type === 'alert-success' || type === 'alert-secondary') {
+        icon = 'fa-circle-check';
+    }
+
+    if (type === 'alert-info') {
+        icon = 'fa-circle-info';
+    }
+
+    var alert = $('<div id="alert-language-update" class="alert alert-dismissible"></div>').addClass(type);
+
+    alert.append($('<i class="fa-solid"></i>').addClass(icon));
+    alert.append(document.createTextNode(' '));
+    fill(alert);
+    alert.append(' <button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+    $('#alert').prepend(alert);
+}
 //--></script>
 {{ footer }}

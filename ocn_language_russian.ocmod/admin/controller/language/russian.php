@@ -143,10 +143,11 @@ class Russian extends \Opencart\System\Engine\Controller
 				$local = $this->extensionVersion();
 				$json['version'] = $remote['version'];
 				$json['url'] = $remote['url'];
+				$json['kind'] = $remote['kind'];
 
 				if ($this->compareVersions($remote['version'], $local) > 0) {
 					$json['newer'] = true;
-					$json['message'] = sprintf($this->language->get('text_update_available'), $remote['version']);
+					$json['message'] = sprintf($this->language->get($remote['kind'] === 'tag' ? 'text_update_tag' : 'text_update_available'), $remote['version']);
 				} else {
 					$json['newer'] = false;
 					$json['message'] = $this->language->get('text_update_current');
@@ -1419,66 +1420,129 @@ class Russian extends \Opencart\System\Engine\Controller
 	}
 
 	/**
-	 * @return array{version: string, url: string}|null
+	 * @return array{version: string, url: string, kind: string}|null
 	 */
 	private function latestGithubRelease(string $repo): ?array
 	{
-		$release = $this->githubGet('https://api.github.com/repos/' . $repo . '/releases/latest');
+		$release = $this->githubRelease($repo);
+		$tag = $this->githubBestTag($repo);
 
-		if ($release['status'] === 200 && is_array($release['body'])) {
-			$version = $this->plainVersion((string)($release['body']['tag_name'] ?? ''));
-
-			if ($version !== '') {
-				$url = trim((string)($release['body']['html_url'] ?? ''));
-
-				if ($url === '') {
-					$url = 'https://github.com/' . $repo . '/releases/tag/' . rawurlencode($version);
-				}
-
-				return ['version' => $version, 'url' => $url];
-			}
-		}
-
-		if ($release['status'] !== 404 && $release['status'] !== 200) {
+		if ($release === null && $tag === null) {
 			return null;
 		}
 
-		$tags = $this->githubGet('https://api.github.com/repos/' . $repo . '/tags');
+		if ($release !== null && ($tag === null || $this->compareVersions($release['version'], $tag['version']) >= 0)) {
+			return $release;
+		}
 
-		if ($tags['status'] !== 200 || !is_array($tags['body']) || !$tags['body']) {
+		return $tag;
+	}
+
+	/**
+	 * @return array{version: string, url: string, kind: string}|null
+	 */
+	private function githubRelease(string $repo): ?array
+	{
+		$response = $this->githubGet('https://api.github.com/repos/' . $repo . '/releases/latest');
+
+		if ($response['status'] === 404) {
 			return null;
 		}
 
-		$newest = '';
-
-		foreach ($tags['body'] as $tag) {
-			if (!is_array($tag)) {
-				continue;
-			}
-
-			$version = $this->plainVersion((string)($tag['name'] ?? ''));
-
-			if ($version === '') {
-				continue;
-			}
-
-			if ($newest === '' || $this->compareVersions($version, $newest) > 0) {
-				$newest = $version;
-			}
+		if ($response['status'] !== 200 || !is_array($response['body'])) {
+			return null;
 		}
 
-		if ($newest === '') {
+		$version = $this->plainVersion((string)($response['body']['tag_name'] ?? ''));
+
+		if ($version === '') {
 			return null;
+		}
+
+		$url = trim((string)($response['body']['html_url'] ?? ''));
+
+		if ($url === '') {
+			$url = 'https://github.com/' . $repo . '/releases/tag/' . rawurlencode((string)($response['body']['tag_name'] ?? $version));
 		}
 
 		return [
-			'version' => $newest,
-			'url' => 'https://github.com/' . $repo . '/releases/tag/' . rawurlencode($newest)
+			'version' => $version,
+			'url' => $url,
+			'kind' => 'release'
 		];
 	}
 
 	/**
-	 * @return array{status: int, body: array<mixed>|null}
+	 * @return array{version: string, url: string, kind: string}|null
+	 */
+	private function githubBestTag(string $repo): ?array
+	{
+		$url = 'https://api.github.com/repos/' . $repo . '/tags?per_page=30';
+		$best = '';
+		$best_name = '';
+		$ok = false;
+
+		for ($page = 0; $page < 5 && $url !== ''; $page++) {
+			$response = $this->githubGet($url);
+
+			if ($response['status'] !== 200 || !is_array($response['body'])) {
+				return $ok ? $this->tagResult($repo, $best, $best_name) : null;
+			}
+
+			$ok = true;
+			$count = 0;
+
+			foreach ($response['body'] as $tag) {
+				if (!is_array($tag)) {
+					continue;
+				}
+
+				$count++;
+				$name = trim((string)($tag['name'] ?? ''));
+				$version = $this->plainVersion($name);
+
+				if ($version === '') {
+					continue;
+				}
+
+				if ($best === '' || $this->compareVersions($version, $best) > 0) {
+					$best = $version;
+					$best_name = $name;
+				}
+			}
+
+			$next = (string)($response['next'] ?? '');
+
+			if ($next === '' || $count < 30) {
+				break;
+			}
+
+			$url = $next;
+		}
+
+		return $this->tagResult($repo, $best, $best_name);
+	}
+
+	/**
+	 * @return array{version: string, url: string, kind: string}|null
+	 */
+	private function tagResult(string $repo, string $version, string $name): ?array
+	{
+		if ($version === '') {
+			return null;
+		}
+
+		$tag = $name !== '' ? $name : $version;
+
+		return [
+			'version' => $version,
+			'url' => 'https://github.com/' . $repo . '/releases/tag/' . rawurlencode($tag),
+			'kind' => 'tag'
+		];
+	}
+
+	/**
+	 * @return array{status: int, body: array<mixed>|null, next: string}
 	 */
 	private function githubGet(string $url): array
 	{
@@ -1487,7 +1551,7 @@ class Russian extends \Opencart\System\Engine\Controller
 		curl_setopt_array($curl, [
 			CURLOPT_URL => $url,
 			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_HEADER => false,
+			CURLOPT_HEADER => true,
 			CURLOPT_CONNECTTIMEOUT => 5,
 			CURLOPT_TIMEOUT => 5,
 			CURLOPT_USERAGENT => 'ocn-language-russian',
@@ -1497,19 +1561,39 @@ class Russian extends \Opencart\System\Engine\Controller
 
 		$body = curl_exec($curl);
 		$status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+		$header_size = (int)curl_getinfo($curl, CURLINFO_HEADER_SIZE);
 		$error = curl_errno($curl);
 		curl_close($curl);
 
 		if ($body === false || $error) {
-			return ['status' => 0, 'body' => null];
+			return ['status' => 0, 'body' => null, 'next' => ''];
 		}
 
-		$decoded = json_decode((string)$body, true);
+		$headers = substr((string)$body, 0, $header_size);
+		$payload = substr((string)$body, $header_size);
+		$decoded = json_decode($payload, true);
 
 		return [
 			'status' => $status,
-			'body' => is_array($decoded) ? $decoded : null
+			'body' => is_array($decoded) ? $decoded : null,
+			'next' => $this->githubNextLink($headers)
 		];
+	}
+
+	private function githubNextLink(string $headers): string
+	{
+		if (!preg_match_all('/^Link:\s*(.+)$/mi', $headers, $lines) || !$lines[1]) {
+			return '';
+		}
+
+		$links = $lines[1];
+		$line = (string)end($links);
+
+		if (!preg_match('/<([^>]+)>;\s*rel="next"/', $line, $match)) {
+			return '';
+		}
+
+		return $match[1];
 	}
 
 	private function plainVersion(string $version): string

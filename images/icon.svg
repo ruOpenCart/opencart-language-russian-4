@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1B3A6B"/>
+  <text x="256" y="62" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="60" font-weight="400">Русский язык</text>
+  <text x="230" y="456" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="510" font-weight="700">4</text>
+  <text x="88" y="456" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="68" font-weight="700">OCN</text>
+  <text x="322" y="456" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="68" font-weight="700">RE</text>
+  <text fill="#FFFFFF" font-family="Arial, sans-serif" font-size="28" font-weight="400" text-anchor="middle">
+    <tspan x="338" y="106">o</tspan>
+    <tspan x="338" y="136">p</tspan>
+    <tspan x="338" y="166">e</tspan>
+    <tspan x="338" y="196">n</tspan>
+    <tspan x="338" y="226">c</tspan>
+    <tspan x="338" y="256">a</tspan>
+    <tspan x="338" y="286">r</tspan>
+    <tspan x="335" y="316">t</tspan>
+  </text>
+  <rect x="146" y="474" width="220" height="16" rx="8" fill="#22C55E"/>
+</svg>

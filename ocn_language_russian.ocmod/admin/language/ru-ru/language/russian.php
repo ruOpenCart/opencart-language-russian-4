@@ -76,6 +76,11 @@ $_['column_unit'] = 'Единица';
 $_['column_description'] = 'Описание';
 $_['entry_translation_all'] = 'Включить перевод всех таблиц';
 $_['button_translate'] = 'Перевести';
+$_['button_check_update'] = 'Проверить обновление';
+$_['text_update_available'] = 'Доступна версия %s';
+$_['text_update_current'] = 'Установлена последняя версия';
+$_['error_update'] = 'Не удалось проверить обновление.';
+$_['error_update_link'] = 'Ссылка репозитория не подходит для проверки обновления.';
 
 $_['error_currency'] = 'Валюта RUB не найдена. Добавьте её в Локализация → Валюты.';
 $_['error_language'] = 'Язык с кодом ru-ru не найден.';

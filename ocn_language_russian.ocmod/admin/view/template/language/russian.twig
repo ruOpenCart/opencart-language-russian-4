@@ -53,6 +53,12 @@
                   {% endif %}
                 </div>
               </div>
+              <div class="row mb-3">
+                <div class="col-sm-10 offset-sm-2">
+                  <button type="button" id="button-check-update" class="btn btn-light"><i class="fas fa-sync"></i> {{ button_check_update }}</button>
+                  <span id="update-result" class="ms-2"></span>
+                </div>
+              </div>
             </div>
             <div id="tab-setting" class="tab-pane">
               <fieldset class="mt-3">
@@ -338,6 +344,69 @@ $('#form-translation').on('submit', function(e) {
                 });
                 translationMasterState();
             }
+        }
+    });
+});
+
+$('#button-check-update').on('click', function() {
+    var button = $(this);
+
+    if (button.prop('disabled')) {
+        return;
+    }
+
+    var icon = button.find('i');
+
+    button.prop('disabled', true);
+    icon.removeClass('fa-sync').addClass('fa-circle-notch fa-spin');
+    $('#update-result').empty();
+
+    $.ajax({
+        url: '{{ check }}'.replaceAll('&amp;', '&'),
+        dataType: 'json',
+        complete: function() {
+            button.prop('disabled', false);
+            icon.removeClass('fa-circle-notch fa-spin').addClass('fa-sync');
+        },
+        success: function(json) {
+            var result = $('#update-result');
+
+            if (json['error']) {
+                result.text(json['error']);
+                return;
+            }
+
+            if (json['newer']) {
+                var message = json['message'] || '';
+                var version = json['version'] || '';
+                var start = version ? message.indexOf(version) : -1;
+                var link = $('<a>', {
+                    href: json['url'],
+                    target: '_blank',
+                    rel: 'noopener',
+                    text: version
+                });
+
+                result.empty();
+
+                if (start >= 0 && json['url']) {
+                    result.append(document.createTextNode(message.substring(0, start)));
+                    result.append(link);
+                    result.append(document.createTextNode(message.substring(start + version.length)));
+                } else if (json['url']) {
+                    result.append(document.createTextNode(message + ' '));
+                    result.append(link);
+                } else {
+                    result.text(message);
+                }
+
+                return;
+            }
+
+            result.text(json['message']);
+        },
+        error: function() {
+            $('#update-result').text({{ error_update|json_encode|raw }});
         }
     });
 });

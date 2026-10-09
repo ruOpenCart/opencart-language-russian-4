@@ -27,6 +27,7 @@ class Russian extends \Opencart\System\Engine\Controller
 
 		$data['save'] = $this->url->link('extension/ocn_language_russian/language/russian.save', 'user_token=' . $this->session->data['user_token']);
 		$data['translate'] = $this->url->link('extension/ocn_language_russian/language/russian.translate', 'user_token=' . $this->session->data['user_token']);
+		$data['check'] = $this->url->link('extension/ocn_language_russian/language/russian.check', 'user_token=' . $this->session->data['user_token']);
 		$data['back'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=language');
 
 		$data['language_russian_status'] = $this->config->get('language_russian_status');
@@ -109,6 +110,48 @@ class Russian extends \Opencart\System\Engine\Controller
 			}
 
 			$json['success'] = $this->language->get('text_success');
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function check(): void
+	{
+		$this->load->language('extension/ocn_language_russian/language/russian');
+
+		$json = [];
+
+		if (!$this->user->hasPermission('access', 'extension/ocn_language_russian/language/russian') && !$this->user->hasPermission('modify', 'extension/ocn_language_russian/language/russian')) {
+			$json['error'] = $this->language->get('error_permission');
+		}
+
+		if (!$json) {
+			$repo = $this->githubRepo();
+
+			if ($repo === null) {
+				$json['error'] = $this->language->get('error_update_link');
+			}
+		}
+
+		if (!$json) {
+			$remote = $this->latestGithubRelease($repo);
+
+			if ($remote === null) {
+				$json['error'] = $this->language->get('error_update');
+			} else {
+				$local = $this->extensionVersion();
+				$json['version'] = $remote['version'];
+				$json['url'] = $remote['url'];
+
+				if ($this->compareVersions($remote['version'], $local) > 0) {
+					$json['newer'] = true;
+					$json['message'] = sprintf($this->language->get('text_update_available'), $remote['version']);
+				} else {
+					$json['newer'] = false;
+					$json['message'] = $this->language->get('text_update_current');
+				}
+			}
 		}
 
 		$this->response->addHeader('Content-Type: application/json');
@@ -1375,6 +1418,151 @@ class Russian extends \Opencart\System\Engine\Controller
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "setting` SET `store_id` = '0', `code` = 'config', `key` = '" . $this->db->escape($key) . "', `value` = '" . $this->db->escape($stored) . "', `serialized` = '" . (int)is_array($value) . "'");
 	}
 
+	/**
+	 * @return array{version: string, url: string}|null
+	 */
+	private function latestGithubRelease(string $repo): ?array
+	{
+		$release = $this->githubGet('https://api.github.com/repos/' . $repo . '/releases/latest');
+
+		if ($release['status'] === 200 && is_array($release['body'])) {
+			$version = $this->plainVersion((string)($release['body']['tag_name'] ?? ''));
+
+			if ($version !== '') {
+				$url = trim((string)($release['body']['html_url'] ?? ''));
+
+				if ($url === '') {
+					$url = 'https://github.com/' . $repo . '/releases/tag/' . rawurlencode($version);
+				}
+
+				return ['version' => $version, 'url' => $url];
+			}
+		}
+
+		if ($release['status'] !== 404 && $release['status'] !== 200) {
+			return null;
+		}
+
+		$tags = $this->githubGet('https://api.github.com/repos/' . $repo . '/tags');
+
+		if ($tags['status'] !== 200 || !is_array($tags['body']) || !$tags['body']) {
+			return null;
+		}
+
+		$newest = '';
+
+		foreach ($tags['body'] as $tag) {
+			if (!is_array($tag)) {
+				continue;
+			}
+
+			$version = $this->plainVersion((string)($tag['name'] ?? ''));
+
+			if ($version === '') {
+				continue;
+			}
+
+			if ($newest === '' || $this->compareVersions($version, $newest) > 0) {
+				$newest = $version;
+			}
+		}
+
+		if ($newest === '') {
+			return null;
+		}
+
+		return [
+			'version' => $newest,
+			'url' => 'https://github.com/' . $repo . '/releases/tag/' . rawurlencode($newest)
+		];
+	}
+
+	/**
+	 * @return array{status: int, body: array<mixed>|null}
+	 */
+	private function githubGet(string $url): array
+	{
+		$curl = curl_init();
+
+		curl_setopt_array($curl, [
+			CURLOPT_URL => $url,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_HEADER => false,
+			CURLOPT_CONNECTTIMEOUT => 5,
+			CURLOPT_TIMEOUT => 5,
+			CURLOPT_USERAGENT => 'ocn-language-russian',
+			CURLOPT_HTTPHEADER => ['Accept: application/vnd.github+json'],
+			CURLOPT_FOLLOWLOCATION => true
+		]);
+
+		$body = curl_exec($curl);
+		$status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+		$error = curl_errno($curl);
+		curl_close($curl);
+
+		if ($body === false || $error) {
+			return ['status' => 0, 'body' => null];
+		}
+
+		$decoded = json_decode((string)$body, true);
+
+		return [
+			'status' => $status,
+			'body' => is_array($decoded) ? $decoded : null
+		];
+	}
+
+	private function plainVersion(string $version): string
+	{
+		$version = trim($version);
+
+		if (str_starts_with(strtolower($version), 'v')) {
+			$version = substr($version, 1);
+		}
+
+		return trim($version);
+	}
+
+	private function compareVersions(string $left, string $right): int
+	{
+		$a = $this->versionParts($left);
+		$b = $this->versionParts($right);
+		$length = max(count($a['numbers']), count($b['numbers']));
+
+		for ($i = 0; $i < $length; $i++) {
+			$av = $a['numbers'][$i] ?? 0;
+			$bv = $b['numbers'][$i] ?? 0;
+
+			if ($av !== $bv) {
+				return $av <=> $bv;
+			}
+		}
+
+		return $a['re'] <=> $b['re'];
+	}
+
+	/**
+	 * @return array{numbers: array<int, int>, re: int}
+	 */
+	private function versionParts(string $version): array
+	{
+		$version = $this->plainVersion($version);
+		$re = 0;
+
+		if (preg_match('/\.RE(\d+)$/i', $version, $match)) {
+			$re = (int)$match[1];
+			$version = substr($version, 0, -strlen($match[0]));
+		}
+
+		$numbers = [];
+
+		foreach (explode('.', $version) as $part) {
+			$numbers[] = (int)$part;
+		}
+
+		return ['numbers' => $numbers, 're' => $re];
+	}
+
 	private function extensionVersion(): string
 	{
 		return trim((string)($this->extensionInstall()['version'] ?? ''));
@@ -1383,11 +1571,43 @@ class Russian extends \Opencart\System\Engine\Controller
 	/**
 	 * @return array{repository: string, forum: string, site: string}
 	 */
+	private function githubRepo(): ?string
+	{
+		$link = trim((string)($this->extensionInstall()['link'] ?? ''));
+		$parts = parse_url($link);
+
+		if (!is_array($parts)) {
+			return null;
+		}
+
+		$host = strtolower((string)($parts['host'] ?? ''));
+
+		if ($host !== 'github.com' && $host !== 'www.github.com') {
+			return null;
+		}
+
+		$path = trim((string)($parts['path'] ?? ''), '/');
+		$path = preg_replace('/\.git$/', '', $path) ?? '';
+
+		if (!preg_match('#^([^/]+)/([^/]+)$#', $path, $match)) {
+			return null;
+		}
+
+		if ($match[1] === '' || $match[2] === '') {
+			return null;
+		}
+
+		return $match[1] . '/' . $match[2];
+	}
+
+	/**
+	 * @return array{repository: string, forum: string, site: string}
+	 */
 	private function extensionLinks(): array
 	{
 		return [
-			'repository' => 'https://github.com/ruOpenCart/opencart-language-russian-4',
-			'forum' => trim((string)($this->extensionInstall()['link'] ?? '')),
+			'repository' => trim((string)($this->extensionInstall()['link'] ?? '')),
+			'forum' => 'https://forum.opencart.name/resources/Русский-язык-для-opencart-4.131/',
 			'site' => 'https://www.opencart.com/index.php?route=marketplace/extension/info&extension_id=39070'
 		];
 	}

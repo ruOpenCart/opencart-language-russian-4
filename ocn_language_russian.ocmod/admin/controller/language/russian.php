@@ -34,6 +34,9 @@ class Russian extends \Opencart\System\Engine\Controller
 
 		$data['preset_active'] = $state['active'];
 		$data['preset_selected'] = $state['selected'];
+		$data['preset_zone_id'] = $state['zone_id'];
+		$data['zones'] = $state['zones'];
+		$data['preset_zone_ids'] = $state['preset_zone_ids'];
 
 		$data['presets'] = [];
 
@@ -65,6 +68,10 @@ class Russian extends \Opencart\System\Engine\Controller
 		$preset = (string)($this->request->post['language_russian_preset'] ?? '');
 		$values = [];
 
+		if ($preset !== '' && !isset($this->presets()[$preset])) {
+			$json['error'] = $this->language->get('error_preset');
+		}
+
 		if (!$json && in_array(true, $apply, true)) {
 			$resolved = $this->resolvePreset($preset, $apply);
 
@@ -79,8 +86,8 @@ class Russian extends \Opencart\System\Engine\Controller
 			$this->load->model('setting/setting');
 
 			$setting = $this->request->post;
-
-			unset($setting['language_russian_preset']);
+			$setting['language_russian_preset'] = isset($this->presets()[$preset]) ? $preset : '';
+			$setting['language_russian_zone_id'] = $this->storedZoneId();
 
 			foreach (array_keys($apply) as $key) {
 				unset($setting['language_russian_default_' . $key]);
@@ -108,7 +115,7 @@ class Russian extends \Opencart\System\Engine\Controller
 
 			if (!$language_info) {
 				$language_data = [
-					'name' => 'Russian',
+					'name' => 'Русский',
 					'code' => 'ru-ru',
 					'locale' => 'ru-ru',
 					'extension' => 'ocn_language_russian',
@@ -146,10 +153,26 @@ class Russian extends \Opencart\System\Engine\Controller
 	private function presets(): array
 	{
 		return [
+			'bryansk' => [
+				'label' => 'text_preset_bryansk',
+				'country_iso' => 'RU',
+				'zone_code' => 'RU-BRY',
+				'timezone' => 'Europe/Moscow',
+				'language' => 'ru-ru',
+				'currency' => 'RUB'
+			],
+			'moscow' => [
+				'label' => 'text_preset_moscow',
+				'country_iso' => 'RU',
+				'zone_code' => 'RU-MOW',
+				'timezone' => 'Europe/Moscow',
+				'language' => 'ru-ru',
+				'currency' => 'RUB'
+			],
 			'russia' => [
 				'label' => 'text_preset_russia',
 				'country_iso' => 'RU',
-				'zone_name' => 'Bryansk',
+				'zone_code' => '',
 				'timezone' => 'Europe/Moscow',
 				'language' => 'ru-ru',
 				'currency' => 'RUB'
@@ -164,7 +187,7 @@ class Russian extends \Opencart\System\Engine\Controller
 	{
 		return [
 			'country' => !empty($this->request->post['language_russian_default_country']),
-			'zone' => !empty($this->request->post['language_russian_default_zone']),
+			'zone' => (string)($this->request->post['language_russian_preset'] ?? '') !== 'russia' && (int)($this->request->post['language_russian_zone_id'] ?? 0) > 0,
 			'timezone' => !empty($this->request->post['language_russian_default_timezone']),
 			'language' => !empty($this->request->post['language_russian_default_language']),
 			'language_admin' => !empty($this->request->post['language_russian_default_language_admin']),
@@ -212,10 +235,10 @@ class Russian extends \Opencart\System\Engine\Controller
 					$errors[] = $this->language->get('error_country');
 				}
 			} else {
-				$zone_id = $this->findZoneId($country_id, $preset['zone_name']);
+				$zone_id = $this->resolveZoneId($country_id);
 
 				if (!$zone_id) {
-					$errors[] = $this->language->get('error_zone');
+					$errors[] = $this->language->get('error_zone_select');
 				} else {
 					$values['config_zone_id'] = (string)$zone_id;
 				}
@@ -273,40 +296,195 @@ class Russian extends \Opencart\System\Engine\Controller
 		return $query->num_rows ? (int)$query->row['country_id'] : 0;
 	}
 
-	private function findZoneId(int $country_id, string $name): int
+	private function resolveZoneId(int $country_id): int
 	{
-		$query = $this->db->query("SELECT DISTINCT `z`.`zone_id` FROM `" . DB_PREFIX . "zone` `z` LEFT JOIN `" . DB_PREFIX . "zone_description` `zd` ON (`z`.`zone_id` = `zd`.`zone_id`) WHERE `z`.`country_id` = '" . (int)$country_id . "' AND `zd`.`name` LIKE '%" . $this->db->escape($name) . "%' LIMIT 1");
+		$zone_id = (int)($this->request->post['language_russian_zone_id'] ?? 0);
 
-		return $query->num_rows ? (int)$query->row['zone_id'] : 0;
+		return $this->zoneBelongsToCountry($zone_id, $country_id) ? $zone_id : 0;
+	}
+
+	private function zoneBelongsToCountry(int $zone_id, int $country_id): bool
+	{
+		if ($zone_id < 1 || $country_id < 1) {
+			return false;
+		}
+
+		$query = $this->db->query("SELECT `zone_id` FROM `" . DB_PREFIX . "zone` WHERE `zone_id` = '" . (int)$zone_id . "' AND `country_id` = '" . (int)$country_id . "' AND `status` = '1' LIMIT 1");
+
+		return (bool)$query->num_rows;
+	}
+
+	private function storedZoneId(): string
+	{
+		if ((string)($this->request->post['language_russian_preset'] ?? '') === 'russia') {
+			return '';
+		}
+
+		$zone_id = (int)($this->request->post['language_russian_zone_id'] ?? 0);
+
+		if ($zone_id < 1) {
+			return '';
+		}
+
+		$country_id = $this->findCountryId('RU');
+
+		if ($this->zoneBelongsToCountry($zone_id, $country_id)) {
+			return (string)$zone_id;
+		}
+
+		$previous = (int)$this->config->get('language_russian_zone_id');
+
+		return $this->zoneBelongsToCountry($previous, $country_id) ? (string)$previous : '';
 	}
 
 	/**
-	 * @return array{active: array<string, bool>, selected: string}
+	 * @return array<int, array{zone_id: int, code: string, name: string}>
 	 */
-	private function presetFormState(): array
+	private function countryZones(int $country_id): array
 	{
-		$preset = $this->presets()['russia'];
-		$country_id = $this->findCountryId($preset['country_iso']);
-		$zone_id = $country_id ? $this->findZoneId($country_id, $preset['zone_name']) : 0;
+		$language_id = (int)$this->config->get('config_language_id');
 
+		$query = $this->db->query("SELECT `z`.`zone_id`, `z`.`code`, COALESCE(NULLIF(`zd`.`name`, ''), NULLIF(`zd1`.`name`, ''), `z`.`code`) AS `name` FROM `" . DB_PREFIX . "zone` `z` LEFT JOIN `" . DB_PREFIX . "zone_description` `zd` ON (`z`.`zone_id` = `zd`.`zone_id` AND `zd`.`language_id` = '" . $language_id . "') LEFT JOIN `" . DB_PREFIX . "zone_description` `zd1` ON (`z`.`zone_id` = `zd1`.`zone_id` AND `zd1`.`language_id` = '1') WHERE `z`.`country_id` = '" . (int)$country_id . "' AND `z`.`status` = '1'");
+
+		$labels = $this->russianZoneLabels();
+		$zones = [];
+
+		foreach ($query->rows as $row) {
+			$code = (string)$row['code'];
+
+			$zones[] = [
+				'zone_id' => (int)$row['zone_id'],
+				'code' => $code,
+				'name' => $labels[$code] ?? (string)$row['name']
+			];
+		}
+
+		usort($zones, static function (array $a, array $b): int {
+			return strcmp($a['name'], $b['name']);
+		});
+
+		return $zones;
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	private function russianZoneLabels(): array
+	{
+		static $labels = null;
+
+		if (is_array($labels)) {
+			return $labels;
+		}
+
+		$labels = [];
+		$file = DIR_EXTENSION . 'ocn_language_russian/admin/language/ru-ru/language/russian.php';
+
+		if (is_file($file)) {
+			$_ = [];
+
+			require $file;
+
+			foreach ($_ as $key => $value) {
+				$prefix = 'text_zone_';
+
+				if (strncmp((string)$key, $prefix, strlen($prefix)) === 0) {
+					$labels[substr((string)$key, strlen($prefix))] = (string)$value;
+				}
+			}
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * @param array<string, string> $preset
+	 *
+	 * @return array<string, bool>
+	 */
+	private function localeMatches(array $preset, int $country_id): array
+	{
 		$catalog = trim((string)$this->config->get('config_language_catalog'));
 
 		if ($catalog === '') {
 			$catalog = trim((string)$this->config->get('config_language'));
 		}
 
-		$active = [
+		return [
 			'country' => $country_id > 0 && (string)$this->config->get('config_country_id') === (string)$country_id,
-			'zone' => $zone_id > 0 && (string)$this->config->get('config_zone_id') === (string)$zone_id,
 			'timezone' => (string)$this->config->get('config_timezone') === $preset['timezone'],
 			'language' => $catalog === $preset['language'],
 			'language_admin' => (string)$this->config->get('config_language_admin') === $preset['language'],
 			'currency' => (string)$this->config->get('config_currency') === $preset['currency']
 		];
+	}
+
+	/**
+	 * @param array<int, array{zone_id: int, code: string, name: string}> $zones
+	 */
+	private function zoneByCode(array $zones, string $code): array
+	{
+		foreach ($zones as $zone) {
+			if ($zone['code'] === $code) {
+				return $zone;
+			}
+		}
+
+		return [];
+	}
+
+	/**
+	 * @return array{active: array<string, bool>, selected: string, zone_id: int, zones: array<int, array{zone_id: int, code: string, name: string}>, preset_zone_ids: array<string, int>}
+	 */
+	private function presetFormState(): array
+	{
+		$presets = $this->presets();
+		$country_id = $this->findCountryId('RU');
+		$zones = $country_id ? $this->countryZones($country_id) : [];
+		$bryansk = $this->zoneByCode($zones, 'RU-BRY');
+		$moscow = $this->zoneByCode($zones, 'RU-MOW');
+		$config_zone_id = (int)$this->config->get('config_zone_id');
+		$saved_zone_id = (int)$this->config->get('language_russian_zone_id');
+		$saved_preset = (string)$this->config->get('language_russian_preset');
+
+		if (!isset($presets[$saved_preset])) {
+			$saved_preset = '';
+		}
+
+		$selected = $saved_preset;
+		$shared = $this->localeMatches($presets['bryansk'], $country_id);
+		$zone_ids = [];
+
+		foreach ($zones as $zone) {
+			$zone_ids[$zone['zone_id']] = $zone;
+		}
+
+		if ($selected === '' && !in_array(false, $shared, true)) {
+			if ($bryansk && $config_zone_id === $bryansk['zone_id']) {
+				$selected = 'bryansk';
+			} elseif ($moscow && $config_zone_id === $moscow['zone_id']) {
+				$selected = 'moscow';
+			} elseif (isset($zone_ids[$config_zone_id])) {
+				$selected = 'russia';
+			}
+		}
+
+		if (!isset($zone_ids[$saved_zone_id])) {
+			$saved_zone_id = 0;
+		}
+
+		$display_zone_id = ($selected === 'russia' || !isset($zone_ids[$saved_zone_id])) ? 0 : $saved_zone_id;
+		$active = $shared;
 
 		return [
 			'active' => $active,
-			'selected' => in_array(false, $active, true) ? '' : 'russia'
+			'selected' => $selected,
+			'zone_id' => $display_zone_id,
+			'zones' => $zones,
+			'preset_zone_ids' => [
+				'bryansk' => $bryansk['zone_id'] ?? 0,
+				'moscow' => $moscow['zone_id'] ?? 0
+			]
 		];
 	}
 

@@ -30,6 +30,8 @@ class Russian extends \Opencart\System\Engine\Controller
 		$data['back'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=language');
 
 		$data['language_russian_status'] = $this->config->get('language_russian_status');
+		$data['extension_version'] = $this->extensionVersion();
+		$data['extension_links'] = $this->extensionLinks();
 
 		$state = $this->presetFormState();
 
@@ -608,13 +610,8 @@ class Russian extends \Opencart\System\Engine\Controller
 			return [];
 		}
 
-		$all = true;
-
-		foreach ($rows as $row) {
-			if (!$row['apply']) {
-				$all = false;
-				break;
-			}
+		foreach ($rows as $index => $row) {
+			$rows[$index]['apply'] = false;
 		}
 
 		return [
@@ -622,7 +619,7 @@ class Russian extends \Opencart\System\Engine\Controller
 			'title' => $title,
 			'dual' => $dual,
 			'rows' => $rows,
-			'all' => $all
+			'all' => false
 		];
 	}
 
@@ -1376,5 +1373,38 @@ class Russian extends \Opencart\System\Engine\Controller
 		$stored = is_array($value) ? (string)json_encode($value) : (string)$value;
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "setting` SET `store_id` = '0', `code` = 'config', `key` = '" . $this->db->escape($key) . "', `value` = '" . $this->db->escape($stored) . "', `serialized` = '" . (int)is_array($value) . "'");
+	}
+
+	private function extensionVersion(): string
+	{
+		return trim((string)($this->extensionInstall()['version'] ?? ''));
+	}
+
+	/**
+	 * @return array{repository: string, forum: string, site: string}
+	 */
+	private function extensionLinks(): array
+	{
+		return [
+			'repository' => 'https://github.com/ruOpenCart/opencart-language-russian-4',
+			'forum' => trim((string)($this->extensionInstall()['link'] ?? '')),
+			'site' => 'https://www.opencart.com/index.php?route=marketplace/extension/info&extension_id=39070'
+		];
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function extensionInstall(): array
+	{
+		$file = DIR_EXTENSION . 'ocn_language_russian/install.json';
+
+		if (!is_file($file)) {
+			return [];
+		}
+
+		$install = json_decode((string)file_get_contents($file), true);
+
+		return is_array($install) ? $install : [];
 	}
 }

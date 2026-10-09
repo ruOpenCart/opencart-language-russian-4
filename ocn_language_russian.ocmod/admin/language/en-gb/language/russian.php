@@ -22,6 +22,10 @@ $_['text_value_currency'] = 'Russian Ruble';
 
 // Entry
 $_['entry_status']     = 'Status';
+$_['entry_version']    = 'Version';
+$_['text_repository']  = 'Repository';
+$_['text_forum']       = 'Forum';
+$_['text_site']        = 'Official site';
 $_['entry_preset']     = 'Preset';
 $_['entry_preset_country'] = 'Country';
 $_['entry_preset_zone'] = 'Region / State';
@@ -45,11 +49,11 @@ $_['error_translation_language'] = 'Language ru-ru was not found, so the directo
 // Tabs
 $_['tab_status'] = 'Status';
 $_['tab_setting'] = 'Settings';
-$_['tab_translation'] = 'Translations';
+$_['tab_translation'] = 'Localization';
 
 // Translation
-$_['text_translation'] = 'Translate writes only the enabled rows. An empty name is skipped. en-gb descriptions are left unchanged. Currency has one name for every language, and its switch is off when the page opens.';
-$_['text_translation_currency'] = 'The name is shared by every language.';
+$_['text_translation'] = 'Translate writes only the enabled rows. An empty name is skipped. en-gb descriptions are left unchanged.';
+$_['text_translation_currency'] = 'The currency name is shared by every language.';
 $_['text_translation_success'] = 'Success: the selected rows have been translated.';
 $_['text_group_country'] = 'Country';
 $_['text_group_region'] = 'Regions';

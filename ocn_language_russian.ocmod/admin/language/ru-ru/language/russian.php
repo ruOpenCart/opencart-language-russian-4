@@ -22,6 +22,10 @@ $_['text_value_currency'] = 'Российский рубль';
 
 // Entry
 $_['entry_status'] = 'Статус';
+$_['entry_version'] = 'Версия';
+$_['text_repository'] = 'Репозиторий';
+$_['text_forum'] = 'Форум';
+$_['text_site'] = 'Официальный сайт';
 $_['entry_preset'] = 'Пресет';
 $_['entry_preset_country'] = 'Страна';
 $_['entry_preset_zone'] = 'Регион';
@@ -45,11 +49,11 @@ $_['error_translation_language'] = 'Язык ru-ru не найден, перев
 // Tabs
 $_['tab_status'] = 'Статус';
 $_['tab_setting'] = 'Настройки';
-$_['tab_translation'] = 'Переводы';
+$_['tab_translation'] = 'Локализация';
 
 // Translation
-$_['text_translation'] = 'Кнопка «Перевести» записывает только включённые строки. Пустое имя пропускается. Описания en-gb не меняются. У валюты название одно на все языки, и её свитч при открытии страницы выключен.';
-$_['text_translation_currency'] = 'Название одно на все языки.';
+$_['text_translation'] = 'Кнопка «Перевести» записывает только включённые строки. Пустое имя пропускается. Описания en-gb не меняются.';
+$_['text_translation_currency'] = 'Название валюты одно на все языки.';
 $_['text_translation_success'] = 'Успех: отмеченные строки переведены.';
 $_['text_group_country'] = 'Страна';
 $_['text_group_region'] = 'Регионы';

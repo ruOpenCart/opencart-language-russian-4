@@ -26,6 +26,7 @@ class Russian extends \Opencart\System\Engine\Controller
 		];
 
 		$data['save'] = $this->url->link('extension/ocn_language_russian/language/russian.save', 'user_token=' . $this->session->data['user_token']);
+		$data['translate'] = $this->url->link('extension/ocn_language_russian/language/russian.translate', 'user_token=' . $this->session->data['user_token']);
 		$data['back'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=language');
 
 		$data['language_russian_status'] = $this->config->get('language_russian_status');
@@ -46,6 +47,12 @@ class Russian extends \Opencart\System\Engine\Controller
 				'name' => $this->language->get($preset['label'])
 			];
 		}
+
+		$translation = $this->translationView();
+
+		$data['translation_groups'] = $translation['groups'];
+		$data['translation_all'] = $translation['all'];
+		$data['translation_error'] = $translation['error'];
 
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');
@@ -100,6 +107,74 @@ class Russian extends \Opencart\System\Engine\Controller
 			}
 
 			$json['success'] = $this->language->get('text_success');
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function translate(): void
+	{
+		$this->load->language('extension/ocn_language_russian/language/russian');
+
+		$json = [];
+
+		if (!$this->user->hasPermission('modify', 'extension/ocn_language_russian/language/russian')) {
+			$json['error'] = $this->language->get('error_permission');
+		}
+
+		$language_id = $this->russianLanguageId();
+
+		if (!$json && !$language_id) {
+			$json['error'] = $this->language->get('error_translation_language');
+		}
+
+		$selected = $this->request->post['selected'] ?? [];
+		$names = $this->request->post['name'] ?? [];
+		$extras = $this->request->post['extra'] ?? [];
+
+		if (!$json && (!is_array($selected) || !$selected)) {
+			$json['error'] = $this->language->get('error_translation');
+		}
+
+		$updated = [];
+		$caches = [];
+
+		if (!$json) {
+			foreach ($selected as $key) {
+				$key = (string)$key;
+				$parts = explode(':', $key, 2);
+
+				if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+					continue;
+				}
+
+				$name = trim((string)($names[$key] ?? ''));
+				$extra = trim((string)($extras[$key] ?? ''));
+				$row = $this->writeTranslation($parts[0], $parts[1], $name, $extra, $language_id);
+
+				if (!$row) {
+					continue;
+				}
+
+				$updated[] = $row;
+				$caches[$parts[0]] = true;
+			}
+
+			if (!$updated) {
+				$json['error'] = $this->language->get('error_translation');
+			} else {
+				foreach (array_keys($caches) as $type) {
+					$cache = $this->translationCacheKey($type);
+
+					if ($cache !== '') {
+						$this->cache->delete($cache);
+					}
+				}
+
+				$json['success'] = $this->language->get('text_translation_success');
+				$json['rows'] = $updated;
+			}
 		}
 
 		$this->response->addHeader('Content-Type: application/json');
@@ -371,30 +446,706 @@ class Russian extends \Opencart\System\Engine\Controller
 	 */
 	private function russianZoneLabels(): array
 	{
-		static $labels = null;
+		return $this->localisationMap()['region'];
+	}
 
-		if (is_array($labels)) {
-			return $labels;
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function localisationMap(): array
+	{
+		static $map = null;
+
+		if (is_array($map)) {
+			return $map;
 		}
 
-		$labels = [];
-		$file = DIR_EXTENSION . 'ocn_language_russian/admin/language/ru-ru/language/russian.php';
+		$file = DIR_EXTENSION . 'ocn_language_russian/system/localisation_ru.php';
+		$loaded = is_file($file) ? require $file : [];
 
-		if (is_file($file)) {
-			$_ = [];
+		if (!is_array($loaded)) {
+			$loaded = [];
+		}
 
-			require $file;
+		foreach (['country', 'region', 'length', 'weight', 'stock_status', 'order_status', 'return_status', 'return_action', 'return_reason', 'subscription_status', 'customer_group', 'currency'] as $key) {
+			if (!isset($loaded[$key]) || !is_array($loaded[$key])) {
+				$loaded[$key] = [];
+			}
+		}
 
-			foreach ($_ as $key => $value) {
-				$prefix = 'text_zone_';
+		$map = $loaded;
 
-				if (strncmp((string)$key, $prefix, strlen($prefix)) === 0) {
-					$labels[substr((string)$key, strlen($prefix))] = (string)$value;
+		return $map;
+	}
+
+	private function russianLanguageId(): int
+	{
+		$this->load->model('localisation/language');
+
+		$language_info = $this->model_localisation_language->getLanguageByCode('ru-ru');
+
+		return $language_info ? (int)$language_info['language_id'] : 0;
+	}
+
+	/**
+	 * @return array<string, array{zone_id: int, name: string}>
+	 */
+	private function russianZoneRecords(int $country_id, int $language_id): array
+	{
+		$query = $this->db->query("SELECT `z`.`zone_id`, `z`.`code`, `zd`.`name` FROM `" . DB_PREFIX . "zone` `z` LEFT JOIN `" . DB_PREFIX . "zone_description` `zd` ON (`z`.`zone_id` = `zd`.`zone_id` AND `zd`.`language_id` = '" . (int)$language_id . "') WHERE `z`.`country_id` = '" . (int)$country_id . "'");
+
+		$zones = [];
+
+		foreach ($query->rows as $row) {
+			$zones[(string)$row['code']] = [
+				'zone_id' => (int)$row['zone_id'],
+				'name' => (string)($row['name'] ?? '')
+			];
+		}
+
+		return $zones;
+	}
+
+	/**
+	 * @return array{groups: array<int, array<string, mixed>>, all: bool, error: string}
+	 */
+	private function translationView(): array
+	{
+		$language_id = $this->russianLanguageId();
+
+		if (!$language_id) {
+			return [
+				'groups' => [],
+				'all' => false,
+				'error' => $this->language->get('error_translation_language')
+			];
+		}
+
+		$map = $this->localisationMap();
+		$groups = [];
+
+		$groups[] = $this->translationGroup('country', $this->language->get('text_group_country'), '', [
+			$this->translationSection('country', '', $this->countryTranslationRows($map, $language_id), false)
+		]);
+		$groups[] = $this->translationGroup('region', $this->language->get('text_group_region'), '', [
+			$this->translationSection('region', '', $this->regionTranslationRows($map, $language_id), false)
+		]);
+		$groups[] = $this->translationGroup('length', $this->language->get('text_group_length'), '', [
+			$this->translationSection('length', '', $this->measureTranslationRows('length', $map['length'], $language_id), true)
+		]);
+		$groups[] = $this->translationGroup('weight', $this->language->get('text_group_weight'), '', [
+			$this->translationSection('weight', '', $this->measureTranslationRows('weight', $map['weight'], $language_id), true)
+		]);
+		$groups[] = $this->translationGroup('stock', $this->language->get('text_group_stock'), '', [
+			$this->translationSection('stock', '', $this->statusTranslationRows('stock_status', 'stock_status_id', 'stock', $map['stock_status'], $language_id), false)
+		]);
+		$groups[] = $this->translationGroup('order', $this->language->get('text_group_order'), '', [
+			$this->translationSection('order', '', $this->statusTranslationRows('order_status', 'order_status_id', 'order', $map['order_status'], $language_id), false)
+		]);
+		$groups[] = $this->translationGroup('return', $this->language->get('text_group_return'), '', [
+			$this->translationSection('return_status', $this->language->get('text_group_return_status'), $this->statusTranslationRows('return_status', 'return_status_id', 'return_status', $map['return_status'], $language_id), false),
+			$this->translationSection('return_action', $this->language->get('text_group_return_action'), $this->statusTranslationRows('return_action', 'return_action_id', 'return_action', $map['return_action'], $language_id), false),
+			$this->translationSection('return_reason', $this->language->get('text_group_return_reason'), $this->statusTranslationRows('return_reason', 'return_reason_id', 'return_reason', $map['return_reason'], $language_id), false)
+		]);
+		$groups[] = $this->translationGroup('subscription', $this->language->get('text_group_subscription'), '', [
+			$this->translationSection('subscription', '', $this->statusTranslationRows('subscription_status', 'subscription_status_id', 'subscription', $map['subscription_status'], $language_id), false)
+		]);
+		$groups[] = $this->translationGroup('customer_group', $this->language->get('text_group_customer'), '', [
+			$this->translationSection('customer_group', '', $this->customerGroupTranslationRows($map['customer_group'], $language_id), true)
+		]);
+		$groups[] = $this->translationGroup('currency', $this->language->get('text_group_currency'), $this->language->get('text_translation_currency'), [
+			$this->translationSection('currency', '', $this->currencyTranslationRows($map['currency']), false)
+		]);
+
+		$groups = array_values(array_filter($groups));
+		$all = $groups !== [];
+
+		foreach ($groups as $group) {
+			foreach ($group['sections'] as $section) {
+				if (!$section['all']) {
+					$all = false;
+					break 2;
 				}
 			}
 		}
 
-		return $labels;
+		return [
+			'groups' => $groups,
+			'all' => $all,
+			'error' => ''
+		];
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $sections
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function translationGroup(string $code, string $title, string $note, array $sections): array
+	{
+		$sections = array_values(array_filter($sections));
+
+		if (!$sections) {
+			return [];
+		}
+
+		return [
+			'code' => $code,
+			'title' => $title,
+			'note' => $note,
+			'sections' => $sections
+		];
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $rows
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function translationSection(string $code, string $title, array $rows, bool $dual): array
+	{
+		if (!$rows) {
+			return [];
+		}
+
+		$all = true;
+
+		foreach ($rows as $row) {
+			if (!$row['apply']) {
+				$all = false;
+				break;
+			}
+		}
+
+		return [
+			'code' => $code,
+			'title' => $title,
+			'dual' => $dual,
+			'rows' => $rows,
+			'all' => $all
+		];
+	}
+
+	/**
+	 * @param array<string, mixed> $map
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function countryTranslationRows(array $map, int $language_id): array
+	{
+		$name = trim((string)($map['country']['RU'] ?? ''));
+		$country_id = $this->findCountryId('RU');
+
+		if ($name === '' || !$country_id) {
+			return [];
+		}
+
+		$query = $this->db->query("SELECT `name` FROM `" . DB_PREFIX . "country_description` WHERE `country_id` = '" . (int)$country_id . "' AND `language_id` = '" . (int)$language_id . "' LIMIT 1");
+
+		if (!$query->num_rows) {
+			return [];
+		}
+
+		$current = (string)$query->row['name'];
+
+		return [[
+			'key' => 'country:RU',
+			'label' => 'RU',
+			'current' => $current,
+			'current_extra' => '',
+			'name' => $name,
+			'extra' => '',
+			'apply' => $current !== $name
+		]];
+	}
+
+	/**
+	 * @param array<string, mixed> $map
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function regionTranslationRows(array $map, int $language_id): array
+	{
+		$country_id = $this->findCountryId('RU');
+
+		if (!$country_id) {
+			return [];
+		}
+
+		$zones = $this->russianZoneRecords($country_id, $language_id);
+		$rows = [];
+
+		foreach ($map['region'] as $code => $name) {
+			$code = (string)$code;
+			$name = trim((string)$name);
+
+			if ($name === '' || !isset($zones[$code])) {
+				continue;
+			}
+
+			$current = $zones[$code]['name'];
+
+			$rows[] = [
+				'key' => 'region:' . $code,
+				'label' => $code,
+				'current' => $current,
+				'current_extra' => '',
+				'name' => $name,
+				'extra' => '',
+				'apply' => $current !== $name
+			];
+		}
+
+		usort($rows, static function (array $a, array $b): int {
+			return strcmp($a['name'], $b['name']);
+		});
+
+		return $rows;
+	}
+
+	/**
+	 * @param array<string, mixed> $definitions
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function measureTranslationRows(string $type, array $definitions, int $language_id): array
+	{
+		$table = $type === 'weight' ? 'weight_class' : 'length_class';
+		$id_column = $table . '_id';
+		$query = $this->db->query("SELECT `c`.`" . $id_column . "` AS `id`, `c`.`value`, `d`.`title`, `d`.`unit` FROM `" . DB_PREFIX . $table . "` `c` LEFT JOIN `" . DB_PREFIX . $table . "_description` `d` ON (`c`.`" . $id_column . "` = `d`.`" . $id_column . "` AND `d`.`language_id` = '" . (int)$language_id . "')");
+		$rows = [];
+
+		foreach ($definitions as $code => $definition) {
+			if (!is_array($definition)) {
+				continue;
+			}
+
+			$code = (string)$code;
+			$title = trim((string)($definition['title'] ?? ''));
+			$unit = trim((string)($definition['unit'] ?? ''));
+			$match = $this->matchMeasure($query->rows, $code, $unit, (string)($definition['value'] ?? ''));
+
+			if (!$match || ($title === '' && $unit === '')) {
+				continue;
+			}
+
+			$current_title = (string)$match['title'];
+			$current_unit = (string)$match['unit'];
+
+			$rows[] = [
+				'key' => $type . ':' . $code,
+				'label' => $code,
+				'current' => $current_title,
+				'current_extra' => $current_unit,
+				'name' => $title,
+				'extra' => $unit,
+				'apply' => $current_title !== $title || $current_unit !== $unit
+			];
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $rows
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function matchMeasure(array $rows, string $unit, string $new_unit, string $value): ?array
+	{
+		foreach ([$unit, $new_unit] as $candidate) {
+			if ($candidate === '') {
+				continue;
+			}
+
+			foreach ($rows as $row) {
+				if ((string)$row['unit'] === $candidate && $row['title'] !== null) {
+					return $row;
+				}
+			}
+		}
+
+		if ($value === '') {
+			return null;
+		}
+
+		foreach ($rows as $row) {
+			$current_unit = (string)$row['unit'];
+
+			if ($row['title'] === null) {
+				continue;
+			}
+
+			if (abs((float)$row['value'] - (float)$value) < 0.0000001 && ($current_unit === $unit || $current_unit === $new_unit)) {
+				return $row;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * @param array<int|string, mixed> $names
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function statusTranslationRows(string $table, string $id_column, string $type, array $names, int $language_id): array
+	{
+		$ids = [];
+
+		foreach (array_keys($names) as $id) {
+			$id = (int)$id;
+
+			if ($id > 0) {
+				$ids[] = $id;
+			}
+		}
+
+		if (!$ids) {
+			return [];
+		}
+
+		$query = $this->db->query("SELECT `" . $id_column . "` AS `id`, `name` FROM `" . DB_PREFIX . $table . "` WHERE `language_id` = '" . (int)$language_id . "' AND `" . $id_column . "` IN (" . implode(',', $ids) . ")");
+		$current = [];
+
+		foreach ($query->rows as $row) {
+			$current[(int)$row['id']] = (string)$row['name'];
+		}
+
+		$rows = [];
+
+		foreach ($names as $id => $name) {
+			$id = (int)$id;
+			$name = trim((string)$name);
+
+			if ($id < 1 || $name === '' || !isset($current[$id])) {
+				continue;
+			}
+
+			$rows[] = [
+				'key' => $type . ':' . $id,
+				'label' => (string)$id,
+				'current' => $current[$id],
+				'current_extra' => '',
+				'name' => $name,
+				'extra' => '',
+				'apply' => $current[$id] !== $name
+			];
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @param array<int|string, mixed> $definitions
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function customerGroupTranslationRows(array $definitions, int $language_id): array
+	{
+		$ids = [];
+
+		foreach (array_keys($definitions) as $id) {
+			$id = (int)$id;
+
+			if ($id > 0) {
+				$ids[] = $id;
+			}
+		}
+
+		if (!$ids) {
+			return [];
+		}
+
+		$query = $this->db->query("SELECT `customer_group_id` AS `id`, `name`, `description` FROM `" . DB_PREFIX . "customer_group_description` WHERE `language_id` = '" . (int)$language_id . "' AND `customer_group_id` IN (" . implode(',', $ids) . ")");
+		$current = [];
+
+		foreach ($query->rows as $row) {
+			$current[(int)$row['id']] = $row;
+		}
+
+		$rows = [];
+
+		foreach ($definitions as $id => $definition) {
+			$id = (int)$id;
+
+			if ($id < 1 || !is_array($definition) || !isset($current[$id])) {
+				continue;
+			}
+
+			$name = trim((string)($definition['name'] ?? ''));
+			$description = trim((string)($definition['description'] ?? ''));
+			$current_name = (string)$current[$id]['name'];
+			$current_description = (string)$current[$id]['description'];
+
+			if ($name === '' && $description === '') {
+				continue;
+			}
+
+			$rows[] = [
+				'key' => 'customer_group:' . $id,
+				'label' => (string)$id,
+				'current' => $current_name,
+				'current_extra' => $current_description,
+				'name' => $name,
+				'extra' => $description,
+				'apply' => $current_name !== $name || $current_description !== $description
+			];
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * @param array<string, mixed> $definitions
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function currencyTranslationRows(array $definitions): array
+	{
+		$title = trim((string)($definitions['RUB'] ?? ''));
+
+		if ($title === '') {
+			return [];
+		}
+
+		$query = $this->db->query("SELECT `title` FROM `" . DB_PREFIX . "currency` WHERE `code` = 'RUB' LIMIT 1");
+
+		if (!$query->num_rows) {
+			return [];
+		}
+
+		return [[
+			'key' => 'currency:RUB',
+			'label' => 'RUB',
+			'current' => (string)$query->row['title'],
+			'current_extra' => '',
+			'name' => $title,
+			'extra' => '',
+			'apply' => false
+		]];
+	}
+
+	/**
+	 * @return array{key: string, current: string, current_extra: string}|null
+	 */
+	private function writeTranslation(string $type, string $code, string $name, string $extra, int $language_id): ?array
+	{
+		$map = $this->localisationMap();
+
+		if ($type === 'country' && $code === 'RU') {
+			$name = $this->clip($name, 128);
+			$country_id = $this->findCountryId('RU');
+
+			if ($name === '' || !$country_id || !$this->updateNamedRow('country_description', 'country_id', $country_id, $language_id, $name)) {
+				return null;
+			}
+
+			return ['key' => 'country:RU', 'current' => $name, 'current_extra' => ''];
+		}
+
+		if ($type === 'region' && isset($map['region'][$code])) {
+			$name = $this->clip($name, 128);
+			$country_id = $this->findCountryId('RU');
+			$zones = $country_id ? $this->russianZoneRecords($country_id, $language_id) : [];
+
+			if ($name === '' || !isset($zones[$code]) || !$this->updateNamedRow('zone_description', 'zone_id', (int)$zones[$code]['zone_id'], $language_id, $name)) {
+				return null;
+			}
+
+			return ['key' => 'region:' . $code, 'current' => $name, 'current_extra' => ''];
+		}
+
+		if (($type === 'length' || $type === 'weight') && isset($map[$type][$code]) && is_array($map[$type][$code])) {
+			return $this->writeMeasure($type, $code, $name, $extra, $language_id);
+		}
+
+		$status = [
+			'stock' => ['stock_status', 'stock_status_id', 'stock_status'],
+			'order' => ['order_status', 'order_status_id', 'order_status'],
+			'return_status' => ['return_status', 'return_status_id', 'return_status'],
+			'return_action' => ['return_action', 'return_action_id', 'return_action'],
+			'return_reason' => ['return_reason', 'return_reason_id', 'return_reason'],
+			'subscription' => ['subscription_status', 'subscription_status_id', 'subscription_status']
+		];
+
+		if (isset($status[$type])) {
+			$id = (int)$code;
+			$name = $this->clip($name, 32);
+			$source = $status[$type][2];
+
+			if ($id < 1 || $name === '' || !isset($map[$source][$id]) || !$this->updateNamedRow($status[$type][0], $status[$type][1], $id, $language_id, $name)) {
+				return null;
+			}
+
+			return ['key' => $type . ':' . $id, 'current' => $name, 'current_extra' => ''];
+		}
+
+		if ($type === 'customer_group') {
+			return $this->writeCustomerGroup((int)$code, $name, $extra, $language_id);
+		}
+
+		if ($type === 'currency' && $code === 'RUB') {
+			$name = $this->clip($name, 32);
+
+			if ($name === '' || !isset($map['currency']['RUB'])) {
+				return null;
+			}
+
+			$query = $this->db->query("SELECT `currency_id` FROM `" . DB_PREFIX . "currency` WHERE `code` = 'RUB' LIMIT 1");
+
+			if (!$query->num_rows) {
+				return null;
+			}
+
+			$this->db->query("UPDATE `" . DB_PREFIX . "currency` SET `title` = '" . $this->db->escape($name) . "' WHERE `code` = 'RUB'");
+
+			return ['key' => 'currency:RUB', 'current' => $name, 'current_extra' => ''];
+		}
+
+		return null;
+	}
+
+	/**
+	 * @return array{key: string, current: string, current_extra: string}|null
+	 */
+	private function writeMeasure(string $type, string $code, string $name, string $extra, int $language_id): ?array
+	{
+		$map = $this->localisationMap();
+		$definition = $map[$type][$code];
+		$table = $type === 'weight' ? 'weight_class' : 'length_class';
+		$id_column = $table . '_id';
+		$name = $this->clip($name, 32);
+		$extra = $this->clip($extra, 4);
+
+		if ($name === '' && $extra === '') {
+			return null;
+		}
+
+		$query = $this->db->query("SELECT `c`.`" . $id_column . "` AS `id`, `c`.`value`, `d`.`title`, `d`.`unit` FROM `" . DB_PREFIX . $table . "` `c` LEFT JOIN `" . DB_PREFIX . $table . "_description` `d` ON (`c`.`" . $id_column . "` = `d`.`" . $id_column . "` AND `d`.`language_id` = '" . (int)$language_id . "')");
+		$match = $this->matchMeasure($query->rows, $code, (string)($definition['unit'] ?? ''), (string)($definition['value'] ?? ''));
+
+		if (!$match) {
+			return null;
+		}
+
+		$fields = [];
+
+		if ($name !== '') {
+			$fields[] = "`title` = '" . $this->db->escape($name) . "'";
+		}
+
+		if ($extra !== '') {
+			$fields[] = "`unit` = '" . $this->db->escape($extra) . "'";
+		}
+
+		$this->db->query("UPDATE `" . DB_PREFIX . $table . "_description` SET " . implode(', ', $fields) . " WHERE `" . $id_column . "` = '" . (int)$match['id'] . "' AND `language_id` = '" . (int)$language_id . "'");
+
+		$current_title = $name !== '' ? $name : (string)$match['title'];
+		$current_unit = $extra !== '' ? $extra : (string)$match['unit'];
+
+		return [
+			'key' => $type . ':' . $code,
+			'current' => $current_title,
+			'current_extra' => $current_unit
+		];
+	}
+
+	/**
+	 * @return array{key: string, current: string, current_extra: string}|null
+	 */
+	private function writeCustomerGroup(int $id, string $name, string $extra, int $language_id): ?array
+	{
+		$map = $this->localisationMap();
+		$name = $this->clip($name, 32);
+		$extra = $this->clip($extra, 65535);
+
+		if ($id < 1 || ($name === '' && $extra === '') || !isset($map['customer_group'][$id])) {
+			return null;
+		}
+
+		$query = $this->db->query("SELECT `name`, `description` FROM `" . DB_PREFIX . "customer_group_description` WHERE `customer_group_id` = '" . (int)$id . "' AND `language_id` = '" . (int)$language_id . "' LIMIT 1");
+
+		if (!$query->num_rows) {
+			return null;
+		}
+
+		$fields = [];
+
+		if ($name !== '') {
+			$fields[] = "`name` = '" . $this->db->escape($name) . "'";
+		}
+
+		if ($extra !== '') {
+			$fields[] = "`description` = '" . $this->db->escape($extra) . "'";
+		}
+
+		$this->db->query("UPDATE `" . DB_PREFIX . "customer_group_description` SET " . implode(', ', $fields) . " WHERE `customer_group_id` = '" . (int)$id . "' AND `language_id` = '" . (int)$language_id . "'");
+
+		return [
+			'key' => 'customer_group:' . $id,
+			'current' => $name !== '' ? $name : (string)$query->row['name'],
+			'current_extra' => $extra !== '' ? $extra : (string)$query->row['description']
+		];
+	}
+
+	private function updateNamedRow(string $table, string $id_column, int $id, int $language_id, string $name): bool
+	{
+		$allowed = [
+			'country_description' => 'country_id',
+			'zone_description' => 'zone_id',
+			'stock_status' => 'stock_status_id',
+			'order_status' => 'order_status_id',
+			'return_status' => 'return_status_id',
+			'return_action' => 'return_action_id',
+			'return_reason' => 'return_reason_id',
+			'subscription_status' => 'subscription_status_id'
+		];
+
+		if (!isset($allowed[$table]) || $allowed[$table] !== $id_column || $id < 1 || $name === '') {
+			return false;
+		}
+
+		$query = $this->db->query("SELECT `" . $id_column . "` FROM `" . DB_PREFIX . $table . "` WHERE `" . $id_column . "` = '" . (int)$id . "' AND `language_id` = '" . (int)$language_id . "' LIMIT 1");
+
+		if (!$query->num_rows) {
+			return false;
+		}
+
+		$this->db->query("UPDATE `" . DB_PREFIX . $table . "` SET `name` = '" . $this->db->escape($name) . "' WHERE `" . $id_column . "` = '" . (int)$id . "' AND `language_id` = '" . (int)$language_id . "'");
+
+		return true;
+	}
+
+	private function clip(string $value, int $limit): string
+	{
+		$value = trim($value);
+
+		if ($value === '') {
+			return '';
+		}
+
+		return mb_substr($value, 0, $limit);
+	}
+
+	private function translationCacheKey(string $type): string
+	{
+		$caches = [
+			'country' => 'country',
+			'region' => 'zone',
+			'length' => 'length_class',
+			'weight' => 'weight_class',
+			'stock' => 'stock_status',
+			'order' => 'order_status',
+			'return_status' => 'return_status',
+			'return_action' => 'return_action',
+			'return_reason' => 'return_reason',
+			'subscription' => 'subscription_status',
+			'customer_group' => 'customer_group',
+			'currency' => 'currency'
+		];
+
+		return $caches[$type] ?? '';
 	}
 
 	/**

@@ -39,5 +39,38 @@ $_['error_preset']     = 'Select a preset to apply the enabled items.';
 $_['error_country']    = 'Country with ISO code RU was not found.';
 $_['error_zone']       = 'Region with code %s was not found for country RU.';
 $_['error_zone_select'] = 'Select a region from the list of federal subjects.';
+$_['error_translation'] = 'Turn on rows with a non-empty name to update the translation.';
+$_['error_translation_language'] = 'Language ru-ru was not found, so the directory cannot be updated.';
+
+// Tabs
+$_['tab_status'] = 'Status';
+$_['tab_setting'] = 'Settings';
+$_['tab_translation'] = 'Translations';
+
+// Translation
+$_['text_translation'] = 'Translate writes only the enabled rows. An empty name is skipped. en-gb descriptions are left unchanged. Currency has one name for every language, and its switch is off when the page opens.';
+$_['text_translation_currency'] = 'The name is shared by every language.';
+$_['text_translation_success'] = 'Success: the selected rows have been translated.';
+$_['text_group_country'] = 'Country';
+$_['text_group_region'] = 'Regions';
+$_['text_group_length'] = 'Length';
+$_['text_group_weight'] = 'Weight';
+$_['text_group_stock'] = 'Stock';
+$_['text_group_order'] = 'Orders';
+$_['text_group_return'] = 'Returns';
+$_['text_group_return_status'] = 'Status';
+$_['text_group_return_action'] = 'Action';
+$_['text_group_return_reason'] = 'Reason';
+$_['text_group_subscription'] = 'Subscriptions';
+$_['text_group_customer'] = 'Customer Groups';
+$_['text_group_currency'] = 'Currency';
+$_['column_code'] = 'Code';
+$_['column_current'] = 'Current';
+$_['column_new'] = 'New name';
+$_['column_title'] = 'Title';
+$_['column_unit'] = 'Unit';
+$_['column_description'] = 'Description';
+$_['entry_translation_all'] = 'Enable translation of all tables';
+$_['button_translate'] = 'Translate';
 $_['error_currency']   = 'Currency RUB was not found. Add it in Localisation → Currencies.';
 $_['error_language']   = 'Language with code ru-ru was not found.';
